@@ -1,0 +1,13 @@
+{
+  "name": "Log Jack",
+  "version": "v1.0.0",
+  "type": "TOOL",
+  "description": "Browse and download log files from your device via a web browser.",
+  "author": "Brandon T. Kowalski",
+  "repo_url": "https://github.com/BrandonKowalski/nextui-logjack",
+  "release_filename": "Log.Jack.pak.zip",
+  "platforms": [
+    "tg5040",
+    "tg5050"
+  ]
+}

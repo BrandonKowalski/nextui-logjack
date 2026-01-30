@@ -1,0 +1,5 @@
+build/
+logjack
+*.log
+.DS_Store
+/.env

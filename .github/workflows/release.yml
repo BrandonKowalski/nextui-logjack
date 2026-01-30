@@ -1,0 +1,81 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., v1.0.0)'
+        required: true
+        type: string
+      changelog:
+        description: 'Changelog message for this release'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set version
+        id: version
+        run: |
+          VERSION=$(echo "${{ inputs.version }}" | xargs)
+          echo "value=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update pak.json
+        run: |
+          CURRENT_VERSION=$(jq -r '.version' pak.json)
+
+          if [ "$CURRENT_VERSION" != "${{ steps.version.outputs.value }}" ]; then
+            echo "Updating pak.json from $CURRENT_VERSION to ${{ steps.version.outputs.value }}"
+            jq --arg version "${{ steps.version.outputs.value }}" \
+               '.version = $version' \
+               pak.json > pak.json.tmp && mv pak.json.tmp pak.json
+          else
+            echo "Version is already ${{ steps.version.outputs.value }}, skipping pak.json update"
+          fi
+
+      - name: Commit pak.json changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet pak.json; then
+            echo "No changes to commit"
+          else
+            git add pak.json
+            git commit -m "Update pak.json to ${{ steps.version.outputs.value }}"
+            git push
+          fi
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Package
+        run: task all
+
+      - name: Create distribution
+        run: |
+          cd "build/Log Jack.pak"
+          zip -r "../Log.Jack.pak.zip" .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.value }}
+          name: ${{ steps.version.outputs.value }}
+          body: ${{ inputs.changelog }}
+          files: |
+            build/Log.Jack.pak.zip
+          draft: false
+          prerelease: false

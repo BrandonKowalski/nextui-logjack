@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Jack</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .container { max-width: 960px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        h1 { color: #9c3461; font-size: 2em; }
+        .path {
+            background: #111;
+            color: #9c3461;
+            margin-bottom: 16px;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 1.15em;
+            border: 1px solid #222;
+        }
+        .file-list { background: #111; border-radius: 12px; overflow: hidden; }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #222;
+        }
+        .file-item:hover { background: #1a1a1a; }
+        .file-item:last-child { border-bottom: none; }
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            flex-shrink: 0;
+        }
+        .file-icon svg { width: 28px; height: 28px; }
+        .folder .file-icon { color: #9c3461; }
+        .file-info { flex: 1; min-width: 0; }
+        .file-name {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.1em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .file-name:hover { color: #9c3461; }
+        .folder .file-name { color: #9c3461; }
+        .file-meta { color: #555; font-size: 0.85em; margin-top: 4px; }
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 16px;
+            flex-shrink: 0;
+        }
+        .file-actions a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            color: #666;
+            background: #1a1a1a;
+        }
+        .file-actions a:hover { background: #9c3461; color: #fff; }
+        .file-actions svg { width: 22px; height: 22px; }
+        .file-actions .delete-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: #1a1a1a;
+            border: none;
+            cursor: pointer;
+            color: #666;
+        }
+        .file-actions .delete-btn svg { width: 22px; height: 22px; }
+        .file-actions .delete-btn:hover { background: #c0392b; color: #fff; }
+        body.delete-mode .file-actions .delete-btn {
+            display: inline-flex;
+            background: #c0392b;
+            color: #fff;
+        }
+        .delete-toggle {
+            cursor: pointer;
+            font-size: 2em;
+            opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+        .delete-toggle:hover, body.delete-mode .delete-toggle { opacity: 1; }
+        .back-link .file-icon { color: #555; }
+        .back-link .file-name { color: #888; }
+        .back-link .file-name:hover { color: #9c3461; }
+        .empty { padding: 60px; text-align: center; color: #555; font-size: 1.1em; }
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .header { justify-content: center; gap: 12px; }
+            h1 { font-size: 1.6em; }
+            .path { text-align: center; font-size: 1em; }
+            .file-item { padding: 14px 16px; }
+            .file-icon { width: 36px; height: 36px; margin-right: 12px; }
+            .file-icon svg { width: 24px; height: 24px; }
+            .file-name { font-size: 1em; }
+            .file-actions a, .file-actions .delete-btn { width: 40px; height: 40px; }
+            .file-actions svg, .file-actions .delete-btn svg { width: 20px; height: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        if (new URLSearchParams(window.location.search).has('delete')) {
+            document.body.classList.add('delete-mode');
+        }
+        function toggleDeleteMode() {
+            document.body.classList.toggle('delete-mode');
+            const url = new URL(window.location);
+            if (document.body.classList.contains('delete-mode')) {
+                url.searchParams.set('delete', '1');
+            } else {
+                url.searchParams.delete('delete');
+            }
+            window.history.replaceState({}, '', url);
+        }
+    </script>
+    <div class="container">
+        <div class="header">
+            <h1>Log Jack</h1>
+            <span class="delete-toggle" onclick="toggleDeleteMode()" title="Toggle delete mode">🪓</span>
+        </div>
+        {{if .ShowPath}}<div class="path">{{.Path}}</div>{{end}}
+        <div class="file-list">
+            {{if .HasBack}}
+            <a href="{{.Parent}}" class="file-item back-link" style="text-decoration:none;">
+                <span class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></span>
+                <div class="file-info"><span class="file-name">..</span></div>
+            </a>
+            {{end}}
+            {{range .Files}}
+            <div class="file-item{{if .IsDir}} folder{{end}}">
+                <span class="file-icon">{{if .IsDir}}<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>{{else}}<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>{{end}}</span>
+                <div class="file-info">
+                    {{if .IsDir}}<a href="{{.Path}}" class="file-name">{{.Name}}</a>{{else}}{{if .IsText}}<a href="/view{{.Path}}" class="file-name">{{.Name}}</a>{{else}}<a href="/download{{.Path}}" class="file-name">{{.Name}}</a>{{end}}{{end}}
+                    {{if not .IsDir}}<div class="file-meta">{{.Size}} · {{.ModTime}}</div>{{end}}
+                </div>
+                <div class="file-actions">
+                    {{if and (not .IsDir) .IsText}}<a href="/view{{.Path}}" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>{{end}}
+                    {{if not .IsDir}}<a href="/download{{.Path}}" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>{{end}}
+                    <form method="POST" action="/delete{{.Path}}" style="display:inline;margin:0;" onsubmit="return confirm('Delete {{.Name}}?');"><button type="submit" class="delete-btn" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></form>
+                </div>
+            </div>
+            {{end}}
+            {{if and (not .Files) (not .HasBack)}}
+            <div class="empty">No files found</div>
+            {{end}}
+        </div>
+    </div>
+</body>
+</html>
