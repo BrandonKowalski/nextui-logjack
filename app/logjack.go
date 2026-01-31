@@ -4,6 +4,7 @@ import (
 	"nextui-logjack/internal"
 	"nextui-logjack/server"
 	"nextui-logjack/ui"
+	"nextui-logjack/utils"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/router"
@@ -27,6 +28,15 @@ func main() {
 
 	logger := gaba.GetLogger()
 	logger.Info("Starting Log Jack")
+
+	localIP := utils.GetLocalIP()
+	if localIP == "127.0.0.1" {
+		logger.Error("No network connection")
+		gaba.ConfirmationMessage("Please connect to WiFi and try again.", []gaba.FooterHelpItem{
+			{ButtonName: "B", HelpText: "Quit"},
+		}, gaba.MessageOptions{})
+		return
+	}
 
 	config, err := internal.LoadConfig()
 	if err != nil {
