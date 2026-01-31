@@ -1,6 +1,6 @@
 {
   "name": "Log Jack",
-  "version": "v1.0.0",
+  "version": "v1.0.1",
   "type": "TOOL",
   "description": "Browse and download log files from your device via a web browser.",
   "author": "Brandon T. Kowalski",
